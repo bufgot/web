@@ -1,4 +1,4 @@
-module github.com/featx/go-web-shim
+module github.com/bufgot/web
 
 go 1.25.5
 
