@@ -196,33 +196,33 @@ func (c *ChiContext) HTML(code int, html string) error {
 	return err
 }
 
-// Redirect 重定`n
+// Redirect 重定向
 func (c *ChiContext) Redirect(code int, url string) error {
 	http.Redirect(c.writer, c.request, url, code)
 	return nil
 }
 
-// Set 设置`n
+// Set 设置key-value
 func (c *ChiContext) Set(key string, value interface{}) {
 	c.request = c.request.WithContext(context.WithValue(c.request.Context(), key, value))
 }
 
-// Get 获取`n
+// Get 获取key-value
 func (c *ChiContext) Get(key string) interface{} {
 	return c.request.Context().Value(key)
 }
 
-// Context 返回Go上下`n
+// Context 返回Go上下文
 func (c *ChiContext) Context() context.Context {
 	return c.request.Context()
 }
 
-// FormValue 获取表单字段`n
+// FormValue 获取表单字段值
 func (c *ChiContext) FormValue(key string) string {
 	return c.request.FormValue(key)
 }
 
-// PostForm 获取POST表单字段`n
+// PostForm 获取POST表单字段
 func (c *ChiContext) PostForm(key string) string {
 	if c.request.Method == "POST" || c.request.Method == "PUT" || c.request.Method == "PATCH" {
 		return c.request.PostFormValue(key)
@@ -235,17 +235,17 @@ func (c *ChiContext) ParseForm() error {
 	return c.request.ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表`n
+// ParseMultipartForm 解析多部分表单
 func (c *ChiContext) ParseMultipartForm(maxMemory int64) error {
 	return c.request.ParseMultipartForm(maxMemory)
 }
 
-// BindJSON 绑定JSON请求`n
+// BindJSON 绑定JSON请求
 func (c *ChiContext) BindJSON(obj interface{}) error {
 	return json.NewDecoder(c.request.Body).Decode(obj)
 }
 
-// BindXML 绑定XML请求`n
+// BindXML 绑定XML请求
 func (c *ChiContext) BindXML(obj interface{}) error {
 	return xml.NewDecoder(c.request.Body).Decode(obj)
 }
@@ -256,7 +256,7 @@ func (c *ChiContext) BindQuery(obj interface{}) error {
 	return mapForm(values, obj)
 }
 
-// FormFile 获取上传的文`n
+// FormFile 获取上传的文件
 func (c *ChiContext) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
 	if c.request.MultipartForm == nil {
 		c.ParseMultipartForm(32 << 20) // 32MB
@@ -270,13 +270,13 @@ func (c *ChiContext) FormFile(key string) (multipart.File, *multipart.FileHeader
 	return nil, nil, http.ErrMissingFile
 }
 
-// MultipartForm 获取多部分表`n
+// MultipartForm 获取多部分表
 func (c *ChiContext) MultipartForm() (*multipart.Form, error) {
 	err := c.ParseMultipartForm(32 << 20)
 	return c.request.MultipartForm, err
 }
 
-// SaveUploadedFile 保存上传的文`n
+// SaveUploadedFile 保存上传的文件
 func (c *ChiContext) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
 	src, err := file.Open()
 	if err != nil {
@@ -308,7 +308,7 @@ func (c *ChiContext) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(c.writer, cookie)
 }
 
-// Logger 返回日志`n
+// Logger 返回日志
 func (c *ChiContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger

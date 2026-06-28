@@ -16,7 +16,7 @@ import (
 // FasthttpAdapter 实现WebFramework接口
 type FasthttpAdapter struct{}
 
-// NewFasthttpAdapter 创建Fasthttp适配�?
+// NewFasthttpAdapter 创建Fasthttp适配
 func NewFasthttpAdapter() *FasthttpAdapter {
 	return &FasthttpAdapter{}
 }
@@ -26,7 +26,7 @@ func (f *FasthttpAdapter) Name() string {
 	return "fasthttp"
 }
 
-// NewRouter 创建新的路由�?
+// NewRouter 创建新的路由
 func (f *FasthttpAdapter) NewRouter() interfaces.Router {
 	return New()
 }
@@ -37,11 +37,11 @@ type FasthttpRouter struct {
 	routes      map[string]map[string]interfaces.Handler
 	middlewares []interfaces.Middleware
 	prefix      string            // 路由组前缀
-	staticPaths map[string]string // 静态文件路径映�?
+	staticPaths map[string]string // 静态文件路径映射
 	logger      interfaces.Logger
 }
 
-// New 创建新的路由器实�?
+// New 创建新的路由器实例
 func New() *FasthttpRouter {
 	return &FasthttpRouter{
 		routes:      make(map[string]map[string]interfaces.Handler),
@@ -95,12 +95,12 @@ func (r *FasthttpRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间�?`n
+// Use 添加中间件
 func (r *FasthttpRouter) Use(middleware interfaces.Middleware) {
 	r.middlewares = append(r.middlewares, middleware)
 }
 
-// Start 启动服务�?`n
+// Start 启动服务
 func (r *FasthttpRouter) Start(addr string) error {
 	server := &fasthttp.Server{
 		Handler: r.handleRequest,
@@ -108,7 +108,7 @@ func (r *FasthttpRouter) Start(addr string) error {
 	return server.ListenAndServe(addr)
 }
 
-// Group 创建路由�?`n
+// Group 创建路由
 func (r *FasthttpRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	group := &FasthttpRouter{
 		routes:      r.routes, // 共享根路由器的路由表
@@ -119,12 +119,12 @@ func (r *FasthttpRouter) Group(prefix string, middlewares ...interfaces.Middlewa
 	return group
 }
 
-// Static 服务静态文�?`n
+// Static 服务静态文件
 func (r *FasthttpRouter) Static(prefix, root string) {
 	r.staticPaths[prefix] = root
 }
 
-// SetLogger 设置日志�?`n
+// SetLogger 设置日志
 func (r *FasthttpRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
@@ -155,7 +155,7 @@ func (r *FasthttpRouter) handleRequest(ctx *fasthttp.RequestCtx) {
 		logger:  r.logger,
 	}
 
-	// 应用中间�?
+	// 应用中间件
 	for _, middleware := range r.middlewares {
 		handler = middleware(handler)
 	}
@@ -170,7 +170,7 @@ type FasthttpContext struct {
 	logger  interfaces.Logger
 }
 
-// Request 返回HTTP请求 (构�?
+// Request 返回HTTP请求 (构建一个http.Request对象)
 func (c *FasthttpContext) Request() *http.Request {
 	req, _ := http.NewRequest(
 		string(c.context.Method()),
@@ -198,9 +198,9 @@ func (c *FasthttpContext) QueryParam(name string) string {
 	return string(c.context.QueryArgs().Peek(name))
 }
 
-// Param 获取路径参数 (fasthttp不支持路径参数，需要简单实�?
+// Param 获取路径参数 (fasthttp不支持路径参数，需要简单实现)
 func (c *FasthttpContext) Param(name string) string {
-	// 简单实现，实际项目中可能需要路由匹�?
+	// 简单实现，实际项目中可能需要路由匹配库来支持路径参数
 	return ""
 }
 
@@ -237,56 +237,56 @@ func (c *FasthttpContext) HTML(code int, html string) error {
 	return nil
 }
 
-// Redirect 重定�?`n
+// Redirect 重定向
 func (c *FasthttpContext) Redirect(code int, url string) error {
 	c.context.SetStatusCode(code)
 	c.context.Redirect(url, code)
 	return nil
 }
 
-// Get 获取�?`n
+// Get 获取
 func (c *FasthttpContext) Get(key string) interface{} {
 	return c.store[key]
 }
 
-// Set 设置�?`n
+// Set 设置
 func (c *FasthttpContext) Set(key string, value interface{}) {
 	c.store[key] = value
 }
 
-// Context 返回Go上下�?`n
+// Context 返回Go上下文
 func (c *FasthttpContext) Context() context.Context {
 	return context.Background()
 }
 
-// BindJSON 绑定JSON请求�?`n
+// BindJSON 绑定JSON请求体
 func (c *FasthttpContext) BindJSON(obj interface{}) error {
 	return json.Unmarshal(c.context.Request.Body(), obj)
 }
 
-// BindXML 绑定XML请求�?`n
+// BindXML 绑定XML请求体
 func (c *FasthttpContext) BindXML(obj interface{}) error {
 	return xml.Unmarshal(c.context.Request.Body(), obj)
 }
 
 // BindQuery 绑定查询参数到结构体
 func (c *FasthttpContext) BindQuery(obj interface{}) error {
-	// 简化实�?
+	// 简化实例
 	return nil
 }
 
-// FormFile 获取上传的文�?`n
+// FormFile 获取上传的文件
 func (c *FasthttpContext) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
-	// Fasthttp的文件上传处理比较复杂，这里简�?
+	// Fasthttp的文件上传处理比较复杂，这里简化
 	return nil, nil, http.ErrMissingFile
 }
 
-// MultipartForm 获取多部分表�?`n
+// MultipartForm 获取多部分表单
 func (c *FasthttpContext) MultipartForm() (*multipart.Form, error) {
 	return nil, nil
 }
 
-// SaveUploadedFile 保存上传的文�?`n
+// SaveUploadedFile 保存上传的文件
 func (c *FasthttpContext) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
 	return nil
 }
@@ -309,7 +309,7 @@ func (c *FasthttpContext) SetCookie(cookie *http.Cookie) {
 	c.context.Response.Header.SetCookie(&fasthttpCookie)
 }
 
-// Logger 返回日志�?`n
+// Logger 返回日志
 func (c *FasthttpContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
@@ -329,24 +329,24 @@ func (c *FasthttpContext) XML(code int, obj interface{}) error {
 	return nil
 }
 
-// FormValue 获取表单字段�?`n
+// FormValue 获取表单字段值
 func (c *FasthttpContext) FormValue(key string) string {
 	return string(c.context.FormValue(key))
 }
 
-// PostForm 获取POST表单字段�?`n
+// PostForm 获取POST表单字段值
 func (c *FasthttpContext) PostForm(key string) string {
 	return string(c.context.PostArgs().Peek(key))
 }
 
 // ParseForm 解析表单
 func (c *FasthttpContext) ParseForm() error {
-	// Fasthttp自动解析，这里不需要额外操�?
+	// Fasthttp自动解析，这里不需要额外操作
 	return nil
 }
 
-// ParseMultipartForm 解析多部分表�?`n
+// ParseMultipartForm 解析多部分表单
 func (c *FasthttpContext) ParseMultipartForm(maxMemory int64) error {
-	// Fasthttp自动处理多部分表单，这里不需要额外操�?
+	// Fasthttp自动处理多部分表单，这里不需要额外操作
 	return nil
 }

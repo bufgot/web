@@ -11,7 +11,7 @@ import (
 // GinAdapter 实现WebFramework接口
 type GinAdapter struct{}
 
-// NewGinAdapter 创建Gin适配�?
+// NewGinAdapter 创建Gin适配器
 func NewGinAdapter() *GinAdapter {
 	return &GinAdapter{}
 }
@@ -21,7 +21,7 @@ func (g *GinAdapter) Name() string {
 	return "gin"
 }
 
-// NewRouter 创建新的路由�?
+// NewRouter 创建新的路由
 func (g *GinAdapter) NewRouter() interfaces.Router {
 	return &GinRouter{
 		gin:    gin.New(),
@@ -30,7 +30,7 @@ func (g *GinAdapter) NewRouter() interfaces.Router {
 	}
 }
 
-// GinRouter 适配Gin's路由�?
+// GinRouter 适配Gin's路由
 type GinRouter struct {
 	gin    *gin.Engine
 	group  *gin.RouterGroup // 当前路由组，如果为nil则使用gin.Engine
@@ -54,7 +54,7 @@ func (r *GinRouter) addRoute(method, path string, handler interfaces.Handler) {
 	}
 }
 
-// addUse 向当前路由器添加中间�?
+// addUse 向当前路由器添加中间件
 func (r *GinRouter) addUse(middleware interfaces.Middleware) {
 	if r.group != nil {
 		r.group.Use(r.wrapMiddleware(middleware))
@@ -98,17 +98,17 @@ func (r *GinRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间�?
+// Use 添加中间件
 func (r *GinRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start 启动服务�?
+// Start 启动服务
 func (r *GinRouter) Start(addr string) error {
 	return r.gin.Run(addr)
 }
 
-// Group 创建路由�
+// Group 创建路由
 func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	var newGroup *gin.RouterGroup
 	if r.group != nil {
@@ -126,7 +126,7 @@ func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) i
 	}
 }
 
-// Static 服务静态文�?
+// Static 服务静态文件
 func (r *GinRouter) Static(prefix, root string) {
 	if r.group != nil {
 		r.group.Static(prefix, root)
@@ -135,7 +135,7 @@ func (r *GinRouter) Static(prefix, root string) {
 	}
 }
 
-// SetLogger 设置日志�?
+// SetLogger 设置日志
 func (r *GinRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
@@ -266,7 +266,7 @@ func (c *GinContext) SetCookie(cookie *http.Cookie) {
 	c.context.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, cookie.Secure, cookie.HttpOnly)
 }
 
-// Logger 返回日志�?
+// Logger 返回日志
 func (c *GinContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
@@ -280,12 +280,12 @@ func (c *GinContext) XML(code int, obj interface{}) error {
 	return nil
 }
 
-// FormValue 获取表单字段�?
+// FormValue 获取表单字段值
 func (c *GinContext) FormValue(key string) string {
 	return c.context.Request.FormValue(key)
 }
 
-// PostForm 获取POST表单字段�?
+// PostForm 获取POST表单字段值
 func (c *GinContext) PostForm(key string) string {
 	return c.context.PostForm(key)
 }
@@ -295,7 +295,7 @@ func (c *GinContext) ParseForm() error {
 	return c.context.Request.ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表�?
+// ParseMultipartForm 解析多部分表单
 func (c *GinContext) ParseMultipartForm(maxMemory int64) error {
 	return c.context.Request.ParseMultipartForm(maxMemory)
 }
