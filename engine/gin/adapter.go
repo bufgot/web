@@ -8,36 +8,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GinAdapter 实现WebFramework接口
+// GinAdapter implements the WebFramework interface
 type GinAdapter struct{}
 
-// NewGinAdapter 创建Gin适配器
+// NewGinAdapter creates a Gin adapter
 func NewGinAdapter() *GinAdapter {
 	return &GinAdapter{}
 }
 
-// Name 返回框架名称
+// Name returns the framework name
 func (g *GinAdapter) Name() string {
 	return "gin"
 }
 
-// NewRouter 创建新的路由
+// NewRouter creates a new router
 func (g *GinAdapter) NewRouter() interfaces.Router {
 	return &GinRouter{
 		gin:    gin.New(),
-		group:  nil, // 初始时没有路由组
+		group:  nil, // no route group initially
 		logger: interfaces.NewDefaultLogger(),
 	}
 }
 
-// GinRouter 适配Gin's路由
+// GinRouter adapts Gin's router
 type GinRouter struct {
 	gin    *gin.Engine
-	group  *gin.RouterGroup // 当前路由组，如果为nil则使用gin.Engine
+	group  *gin.RouterGroup // current route group; if nil, gin.Engine is used
 	logger interfaces.Logger
 }
 
-// currentRouter 返回当前使用的路由器
+// currentRouter returns the currently active router
 func (r *GinRouter) currentRouter() interface{} {
 	if r.group != nil {
 		return r.group
@@ -45,7 +45,7 @@ func (r *GinRouter) currentRouter() interface{} {
 	return r.gin
 }
 
-// addRoute 向当前路由器添加路由
+// addRoute adds a route to the current router
 func (r *GinRouter) addRoute(method, path string, handler interfaces.Handler) {
 	if r.group != nil {
 		r.group.Handle(method, path, r.wrapHandler(handler))
@@ -54,7 +54,7 @@ func (r *GinRouter) addRoute(method, path string, handler interfaces.Handler) {
 	}
 }
 
-// addUse 向当前路由器添加中间件
+// addUse adds middleware to the current router
 func (r *GinRouter) addUse(middleware interfaces.Middleware) {
 	if r.group != nil {
 		r.group.Use(r.wrapMiddleware(middleware))
@@ -63,52 +63,52 @@ func (r *GinRouter) addUse(middleware interfaces.Middleware) {
 	}
 }
 
-// GET 注册GET路由
+// GET registers a GET route
 func (r *GinRouter) GET(path string, handler interfaces.Handler) {
 	r.addRoute("GET", path, handler)
 }
 
-// POST 注册POST路由
+// POST registers a POST route
 func (r *GinRouter) POST(path string, handler interfaces.Handler) {
 	r.addRoute("POST", path, handler)
 }
 
-// PUT 注册PUT路由
+// PUT registers a PUT route
 func (r *GinRouter) PUT(path string, handler interfaces.Handler) {
 	r.addRoute("PUT", path, handler)
 }
 
-// DELETE 注册DELETE路由
+// DELETE registers a DELETE route
 func (r *GinRouter) DELETE(path string, handler interfaces.Handler) {
 	r.addRoute("DELETE", path, handler)
 }
 
-// PATCH 注册PATCH路由
+// PATCH registers a PATCH route
 func (r *GinRouter) PATCH(path string, handler interfaces.Handler) {
 	r.addRoute("PATCH", path, handler)
 }
 
-// HEAD 注册HEAD路由
+// HEAD registers a HEAD route
 func (r *GinRouter) HEAD(path string, handler interfaces.Handler) {
 	r.addRoute("HEAD", path, handler)
 }
 
-// OPTIONS 注册OPTIONS路由
+// OPTIONS registers an OPTIONS route
 func (r *GinRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间件
+// Use adds middleware
 func (r *GinRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start 启动服务
+// Start starts the server
 func (r *GinRouter) Start(addr string) error {
 	return r.gin.Run(addr)
 }
 
-// Group 创建路由
+// Group creates a route group
 func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	var newGroup *gin.RouterGroup
 	if r.group != nil {
@@ -126,7 +126,7 @@ func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) i
 	}
 }
 
-// Static 服务静态文件
+// Static serves static files
 func (r *GinRouter) Static(prefix, root string) {
 	if r.group != nil {
 		r.group.Static(prefix, root)
@@ -135,17 +135,17 @@ func (r *GinRouter) Static(prefix, root string) {
 	}
 }
 
-// SetLogger 设置日志
+// SetLogger sets the logger
 func (r *GinRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
-// GetGinEngine 获取底层的gin.Engine
+// GetGinEngine returns the underlying gin.Engine
 func (r *GinRouter) GetGinEngine() *gin.Engine {
 	return r.gin
 }
 
-// wrapHandler 将shim.Handler包装为gin.HandlerFunc
+// wrapHandler wraps a shim.Handler as a gin.HandlerFunc
 func (r *GinRouter) wrapHandler(h interfaces.Handler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := &GinContext{context: c, logger: r.logger}
@@ -153,7 +153,7 @@ func (r *GinRouter) wrapHandler(h interfaces.Handler) gin.HandlerFunc {
 	}
 }
 
-// wrapMiddleware 将shim.Middleware包装为gin.HandlerFunc
+// wrapMiddleware wraps a shim.Middleware as a gin.HandlerFunc
 func (r *GinRouter) wrapMiddleware(m interfaces.Middleware) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := &GinContext{context: c}
@@ -165,108 +165,108 @@ func (r *GinRouter) wrapMiddleware(m interfaces.Middleware) gin.HandlerFunc {
 	}
 }
 
-// GinContext 适配Gin's上下�?
+// GinContext adapts Gin's context
 type GinContext struct {
 	context *gin.Context
 	logger  interfaces.Logger
 }
 
-// Request 返回HTTP请求
+// Request returns the HTTP request
 func (c *GinContext) Request() *http.Request {
 	return c.context.Request
 }
 
-// Method 返回请求方法
+// Method returns the request method
 func (c *GinContext) Method() string {
 	return c.context.Request.Method
 }
 
-// Path 返回请求路径
+// Path returns the request path
 func (c *GinContext) Path() string {
 	return c.context.Request.URL.Path
 }
 
-// QueryParam 获取查询参数
+// QueryParam retrieves a query parameter
 func (c *GinContext) QueryParam(name string) string {
 	return c.context.Query(name)
 }
 
-// Param 获取路径参数
+// Param retrieves a path parameter
 func (c *GinContext) Param(name string) string {
 	return c.context.Param(name)
 }
 
-// Status 设置状态码
+// Status sets the status code
 func (c *GinContext) Status(code int) {
 	c.context.Status(code)
 }
 
-// JSON 返回JSON响应
+// JSON returns a JSON response
 func (c *GinContext) JSON(code int, obj interface{}) error {
 	c.context.JSON(code, obj)
 	return nil
 }
 
-// Text 返回文本响应
+// Text returns a text response
 func (c *GinContext) Text(code int, text string) error {
 	c.context.String(code, text)
 	return nil
 }
 
-// HTML 返回HTML响应
+// HTML returns an HTML response
 func (c *GinContext) HTML(code int, html string) error {
 	c.context.HTML(code, html, nil)
 	return nil
 }
 
-// Redirect 重定�?
+// Redirect performs a redirect
 func (c *GinContext) Redirect(code int, url string) error {
 	c.context.Redirect(code, url)
 	return nil
 }
 
-// Set 设置�
+// Set stores a key-value pair�
 func (c *GinContext) Set(key string, value interface{}) {
 	c.context.Set(key, value)
 }
 
-// Get 获取�?
+// Get retrieves a stored value�?
 func (c *GinContext) Get(key string) interface{} {
 	val, _ := c.context.Get(key)
 	return val
 }
 
-// Context 返回Go上下�?
+// Context returns the Go context
 func (c *GinContext) Context() context.Context {
 	return c.context.Request.Context()
 }
 
-// BindJSON 绑定JSON请求�?
+// BindJSON binds the JSON request�?
 func (c *GinContext) BindJSON(obj interface{}) error {
 	return c.context.ShouldBindJSON(obj)
 }
 
-// BindXML 绑定XML请求�?
+// BindXML binds the XML request�?
 func (c *GinContext) BindXML(obj interface{}) error {
 	return c.context.ShouldBindXML(obj)
 }
 
-// BindQuery 绑定查询参数到结构体
+// BindQuery binds query parameters to a struct
 func (c *GinContext) BindQuery(obj interface{}) error {
 	return c.context.ShouldBindQuery(obj)
 }
 
-// Cookie 获取Cookie
+// Cookie retrieves a cookie
 func (c *GinContext) Cookie(name string) (string, error) {
 	return c.context.Cookie(name)
 }
 
-// SetCookie 设置Cookie
+// SetCookie sets a cookie
 func (c *GinContext) SetCookie(cookie *http.Cookie) {
 	c.context.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, cookie.Secure, cookie.HttpOnly)
 }
 
-// Logger 返回日志
+// Logger returns the logger
 func (c *GinContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
@@ -274,28 +274,28 @@ func (c *GinContext) Logger() interfaces.Logger {
 	return c.logger
 }
 
-// XML 返回XML响应
+// XML returns an XML response
 func (c *GinContext) XML(code int, obj interface{}) error {
 	c.context.XML(code, obj)
 	return nil
 }
 
-// FormValue 获取表单字段值
+// FormValue retrieves a form field value
 func (c *GinContext) FormValue(key string) string {
 	return c.context.Request.FormValue(key)
 }
 
-// PostForm 获取POST表单字段值
+// PostForm retrieves a POST form field value
 func (c *GinContext) PostForm(key string) string {
 	return c.context.PostForm(key)
 }
 
-// ParseForm 解析表单
+// ParseForm parses the form
 func (c *GinContext) ParseForm() error {
 	return c.context.Request.ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表单
+// ParseMultipartForm parses the multipart form
 func (c *GinContext) ParseMultipartForm(maxMemory int64) error {
 	return c.context.Request.ParseMultipartForm(maxMemory)
 }

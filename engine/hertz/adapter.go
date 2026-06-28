@@ -11,35 +11,35 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
-// HertzAdapter 实现WebFramework接口
+// HertzAdapter implements the WebFramework interface
 type HertzAdapter struct{}
 
-// NewHertzAdapter 创建Hertz适配
+// NewHertzAdapter creates a Hertz adapter
 func NewHertzAdapter() *HertzAdapter {
 	return &HertzAdapter{}
 }
 
-// Name 返回框架名称
+// Name returns the framework name
 func (h *HertzAdapter) Name() string {
 	return "hertz"
 }
 
-// NewRouter 创建新的路由
+// NewRouter creates a new router
 func (h *HertzAdapter) NewRouter() interfaces.Router {
 	return New()
 }
 
-// HertzRouter 适配Hertz路由
+// HertzRouter adapts Hertz's router
 type HertzRouter struct {
 	routes      map[string]map[string]interfaces.Handler
 	middlewares []interfaces.Middleware
 	server      *server.Hertz
-	prefix      string            // 路由组前缀
-	staticPaths map[string]string // 静态文件路径映射
+	prefix      string            // route group prefix
+	staticPaths map[string]string // static file path mappings
 	logger      interfaces.Logger
 }
 
-// New 创建新的路由器实现
+// New creates a new router instance
 func New() *HertzRouter {
 	return &HertzRouter{
 		routes:      make(map[string]map[string]interfaces.Handler),
@@ -48,57 +48,57 @@ func New() *HertzRouter {
 	}
 }
 
-// GET 注册GET路由
+// GET registers a GET route
 func (r *HertzRouter) addRoute(method string, path string, handler interfaces.Handler) {
 	if r.routes[method] == nil {
 		r.routes[method] = make(map[string]interfaces.Handler)
 	}
-	// 应用路由组前缀
+	// apply route group prefix
 	fullPath := r.prefix + path
 	r.routes[method][fullPath] = handler
 }
 
-// GET 注册GET路由
+// GET registers a GET route
 func (r *HertzRouter) GET(path string, handler interfaces.Handler) {
 	r.addRoute("GET", path, handler)
 }
 
-// POST 注册POST路由
+// POST registers a POST route
 func (r *HertzRouter) POST(path string, handler interfaces.Handler) {
 	r.addRoute("POST", path, handler)
 }
 
-// PUT 注册PUT路由
+// PUT registers a PUT route
 func (r *HertzRouter) PUT(path string, handler interfaces.Handler) {
 	r.addRoute("PUT", path, handler)
 }
 
-// DELETE 注册DELETE路由
+// DELETE registers a DELETE route
 func (r *HertzRouter) DELETE(path string, handler interfaces.Handler) {
 	r.addRoute("DELETE", path, handler)
 }
 
-// PATCH 注册PATCH路由
+// PATCH registers a PATCH route
 func (r *HertzRouter) PATCH(path string, handler interfaces.Handler) {
 	r.addRoute("PATCH", path, handler)
 }
 
-// HEAD 注册HEAD路由
+// HEAD registers a HEAD route
 func (r *HertzRouter) HEAD(path string, handler interfaces.Handler) {
 	r.addRoute("HEAD", path, handler)
 }
 
-// OPTIONS 注册OPTIONS路由
+// OPTIONS registers an OPTIONS route
 func (r *HertzRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间件
+// Use adds middleware
 func (r *HertzRouter) Use(middleware interfaces.Middleware) {
 	r.middlewares = append(r.middlewares, middleware)
 }
 
-// Start 启动服务
+// Start starts the server
 func (r *HertzRouter) Start(addr string) error {
 	if strings.HasPrefix(addr, ":") {
 		addr = "0.0.0.0" + addr
@@ -141,28 +141,28 @@ func (r *HertzRouter) Start(addr string) error {
 	return nil
 }
 
-// Group 创建路由
+// Group creates a route group
 func (r *HertzRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	group := &HertzRouter{
-		routes:      r.routes, // 共享根路由器的路由表
+		routes:      r.routes, // share the root router's route table
 		middlewares: append(r.middlewares, middlewares...),
-		prefix:      r.prefix + prefix, // 连接前缀
+		prefix:      r.prefix + prefix, // concatenate prefix
 		logger:      r.logger,
 	}
 	return group
 }
 
-// Static 服务静态文件
+// Static serves static files
 func (r *HertzRouter) Static(prefix, root string) {
 	r.staticPaths[prefix] = root
 }
 
-// SetLogger 设置日志
+// SetLogger sets the logger
 func (r *HertzRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
-// wrapHandler 将统一处理器包装为Hertz处理
+// wrapHandler wraps the unified handler as a Hertz handler
 func (r *HertzRouter) wrapHandler(h interfaces.Handler) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		shimCtx := &HertzContext{context: c, ctx: ctx, logger: r.logger}
@@ -170,7 +170,7 @@ func (r *HertzRouter) wrapHandler(h interfaces.Handler) app.HandlerFunc {
 	}
 }
 
-// wrapMiddleware 将统一中间件包装为Hertz中间
+// wrapMiddleware wraps the unified middleware as a Hertz middleware
 func (r *HertzRouter) wrapMiddleware(m interfaces.Middleware) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		shimCtx := &HertzContext{context: c, ctx: ctx, logger: r.logger}
@@ -182,14 +182,14 @@ func (r *HertzRouter) wrapMiddleware(m interfaces.Middleware) app.HandlerFunc {
 	}
 }
 
-// HertzContext 适配Hertz上下文
+// HertzContext adapts Hertz's context
 type HertzContext struct {
 	context *app.RequestContext
 	ctx     context.Context
 	logger  interfaces.Logger
 }
 
-// Request 返回HTTP请求
+// Request returns the HTTP request
 func (c *HertzContext) Request() *http.Request {
 	method := string(c.context.Method())
 	uri := c.context.URI().String()
@@ -201,62 +201,62 @@ func (c *HertzContext) Request() *http.Request {
 	return req
 }
 
-// Method 返回请求方法
+// Method returns the request method
 func (c *HertzContext) Method() string {
 	return string(c.context.Method())
 }
 
-// Path 返回请求路径
+// Path returns the request path
 func (c *HertzContext) Path() string {
 	return string(c.context.Path())
 }
 
-// QueryParam 获取查询参数
+// QueryParam retrieves a query parameter
 func (c *HertzContext) QueryParam(name string) string {
 	return string(c.context.Query(name))
 }
 
-// Param 获取路径参数
+// Param retrieves a path parameter
 func (c *HertzContext) Param(name string) string {
 	return string(c.context.Param(name))
 }
 
-// Status 设置状态码
+// Status sets the status code
 func (c *HertzContext) Status(code int) {
 	c.context.SetStatusCode(code)
 }
 
-// JSON 返回JSON响应
+// JSON returns a JSON response
 func (c *HertzContext) JSON(code int, obj interface{}) error {
 	c.context.JSON(code, obj)
 	return nil
 }
 
-// Text 返回文本响应
+// Text returns a text response
 func (c *HertzContext) Text(code int, text string) error {
 	c.context.String(code, text)
 	return nil
 }
 
-// HTML 返回HTML响应
+// HTML returns an HTML response
 func (c *HertzContext) HTML(code int, html string) error {
 	c.context.SetContentType("text/html")
 	c.context.String(code, html)
 	return nil
 }
 
-// Redirect 重定向
+// Redirect performs a redirect
 func (c *HertzContext) Redirect(code int, url string) error {
 	c.context.Redirect(code, []byte(url))
 	return nil
 }
 
-// Set 设置
+// Set stores a key-value pair
 func (c *HertzContext) Set(key string, value interface{}) {
 	c.context.Set(key, value)
 }
 
-// Logger 返回日志
+// Logger returns the logger
 func (c *HertzContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
@@ -264,35 +264,35 @@ func (c *HertzContext) Logger() interfaces.Logger {
 	return c.logger
 }
 
-// Get 获取
+// Get retrieves a stored value
 func (c *HertzContext) Get(key string) interface{} {
 	val, _ := c.context.Get(key)
 	return val
 }
 
-// Context 返回Go上下文
+// Context returns the Go context
 func (c *HertzContext) Context() context.Context {
 	return c.ctx
 }
 
-// BindJSON 绑定JSON请求体
+// BindJSON binds the JSON request body
 func (c *HertzContext) BindJSON(obj interface{}) error {
 	return c.context.BindJSON(obj)
 }
 
-// BindXML 绑定XML请求体
+// BindXML binds the XML request body
 func (c *HertzContext) BindXML(obj interface{}) error {
-	// Hertz没有内置BindXML，这里简化实现
+	// Hertz has no built-in BindXML; simplified implementation
 	return nil
 }
 
-// BindQuery 绑定查询参数到结构体
+// BindQuery binds query parameters to a struct
 func (c *HertzContext) BindQuery(obj interface{}) error {
-	// Hertz没有内置BindQuery，这里简化实现
+	// Hertz has no built-in BindQuery; simplified implementation
 	return nil
 }
 
-// Cookie 获取Cookie
+// Cookie retrieves a cookie
 func (c *HertzContext) Cookie(name string) (string, error) {
 	value := c.context.Cookie(name)
 	if len(value) == 0 {
@@ -301,35 +301,35 @@ func (c *HertzContext) Cookie(name string) (string, error) {
 	return string(value), nil
 }
 
-// SetCookie 设置Cookie
+// SetCookie sets a cookie
 func (c *HertzContext) SetCookie(cookie *http.Cookie) {
 	c.context.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, 0, cookie.Secure, cookie.HttpOnly)
 }
 
-// XML 返回XML响应
+// XML returns an XML response
 func (c *HertzContext) XML(code int, obj interface{}) error {
 	c.context.XML(code, obj)
 	return nil
 }
 
-// FormValue 获取表单字段值
+// FormValue retrieves a form field value
 func (c *HertzContext) FormValue(key string) string {
 	return string(c.context.FormValue(key))
 }
 
-// PostForm 获取POST表单字段值
+// PostForm retrieves a POST form field value
 func (c *HertzContext) PostForm(key string) string {
 	return string(c.context.PostForm(key))
 }
 
-// ParseForm 解析表单
+// ParseForm parses the form
 func (c *HertzContext) ParseForm() error {
-	// Hertz自动解析表单，这里不需要额外操作
+	// Hertz auto-parses forms; no extra action needed
 	return nil
 }
 
-// ParseMultipartForm 解析多部分表单
+// ParseMultipartForm parses the multipart form
 func (c *HertzContext) ParseMultipartForm(maxMemory int64) error {
-	// Hertz自动处理多部分表单，这里不需要额外操作
+	// Hertz auto-handles multipart forms; no extra action needed
 	return nil
 }
