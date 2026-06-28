@@ -4,15 +4,16 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bufgot/web"
-	""
+	"github.com/bufgot/log/stdlib"
+	interfaces "github.com/bufgot/web"
 	"github.com/labstack/echo/v4"
 )
 
-// EchoAdapter 实现WebFramework接口
+// NewEchoAdapter 实现WebFramework接口
 type EchoAdapter struct{}
 
-// NewEchoAdapter 创建Echo适配�?func NewEchoAdapter() *EchoAdapter {
+// NewEchoAdapter 创建Echo适配�?
+func NewEchoAdapter() *EchoAdapter {
 	return &EchoAdapter{}
 }
 
@@ -21,11 +22,12 @@ func (e *EchoAdapter) Name() string {
 	return "echo"
 }
 
-// NewRouter 创建新的路由�?func (e *EchoAdapter) NewRouter() interfaces.Router {
+// NewRouter 创建新的路由�?
+func (e *EchoAdapter) NewRouter() interfaces.Router {
 	return &EchoRouter{
 		echo:   echo.New(),
 		group:  nil, // 初始时没有路由组
-		logger: default.NewDefaultLogger(),
+		logger: stdlib.NewLogger(nil),
 	}
 }
 
@@ -53,7 +55,8 @@ func (r *EchoRouter) addRoute(method, path string, handler interfaces.Handler) {
 	}
 }
 
-// addUse 向当前路由器添加中间�?func (r *EchoRouter) addUse(middleware interfaces.Middleware) {
+// addUse 向当前路由器添加中间�?
+func (r *EchoRouter) addUse(middleware interfaces.Middleware) {
 	if r.group != nil {
 		r.group.Use(r.wrapMiddleware(middleware))
 	} else {
@@ -96,15 +99,18 @@ func (r *EchoRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间�?func (r *EchoRouter) Use(middleware interfaces.Middleware) {
+// Use 添加中间�?
+func (r *EchoRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start 启动服务�?func (r *EchoRouter) Start(addr string) error {
+// Start 启动服务�?
+func (r *EchoRouter) Start(addr string) error {
 	return r.echo.Start(addr)
 }
 
-// Group 创建路由�?func (r *EchoRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
+// Group 创建路由�?
+func (r *EchoRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	var newGroup *echo.Group
 	if r.group != nil {
 		newGroup = r.group.Group(prefix)
@@ -121,7 +127,8 @@ func (r *EchoRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// Static 服务静态文�?func (r *EchoRouter) Static(prefix, root string) {
+// Static 服务静态文�?
+func (r *EchoRouter) Static(prefix, root string) {
 	if r.group != nil {
 		r.group.Static(prefix, root)
 	} else {
@@ -129,7 +136,8 @@ func (r *EchoRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// SetLogger 设置日志�?func (r *EchoRouter) SetLogger(logger interfaces.Logger) {
+// SetLogger 设置日志�?
+func (r *EchoRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
@@ -205,33 +213,40 @@ func (c *EchoContext) HTML(code int, html string) error {
 	return c.context.HTML(code, html)
 }
 
-// Redirect 重定�?func (c *EchoContext) Redirect(code int, url string) error {
+// Redirect 重定�?`n
+func (c *EchoContext) Redirect(code int, url string) error {
 	return c.context.Redirect(code, url)
 }
 
-// Set 设置�?func (c *EchoContext) Set(key string, value interface{}) {
+// Set 设置�?`n
+func (c *EchoContext) Set(key string, value interface{}) {
 	c.context.Set(key, value)
 }
 
-// Get 获取�?func (c *EchoContext) Get(key string) interface{} {
+// Get 获取�?`n
+func (c *EchoContext) Get(key string) interface{} {
 	return c.context.Get(key)
 }
 
-// Context 返回Go上下�?func (c *EchoContext) Context() context.Context {
+// Context 返回Go上下�?`n
+func (c *EchoContext) Context() context.Context {
 	return c.context.Request().Context()
 }
 
-// BindJSON 绑定JSON请求�?func (c *EchoContext) BindJSON(obj interface{}) error {
+// BindJSON 绑定JSON请求�?`
+func (c *EchoContext) BindJSON(obj interface{}) error {
 	return c.context.Bind(obj)
 }
 
-// BindXML 绑定XML请求�?func (c *EchoContext) BindXML(obj interface{}) error {
+// BindXML 绑定XML请求�?`n
+func (c *EchoContext) BindXML(obj interface{}) error {
 	return c.context.Bind(obj)
 }
 
 // BindQuery 绑定查询参数到结构体
 func (c *EchoContext) BindQuery(obj interface{}) error {
-	// Echo没有内置BindQuery，这里简化实�?	return nil
+	// Echo没有内置BindQuery，这里简化实�?
+	return nil
 }
 
 // Cookie 获取Cookie
@@ -248,7 +263,8 @@ func (c *EchoContext) SetCookie(cookie *http.Cookie) {
 	c.context.SetCookie(cookie)
 }
 
-// Logger 返回日志�?func (c *EchoContext) Logger() interfaces.Logger {
+// Logger 返回日志�?`n
+func (c *EchoContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
 	}
@@ -260,11 +276,13 @@ func (c *EchoContext) XML(code int, obj interface{}) error {
 	return c.context.XML(code, obj)
 }
 
-// FormValue 获取表单字段�?func (c *EchoContext) FormValue(key string) string {
+// FormValue 获取表单字段�?`n
+func (c *EchoContext) FormValue(key string) string {
 	return c.context.FormValue(key)
 }
 
-// PostForm 获取POST表单字段�?func (c *EchoContext) PostForm(key string) string {
+// PostForm 获取POST表单字段�?`n
+func (c *EchoContext) PostForm(key string) string {
 	return c.context.FormValue(key) // Echo的FormValue处理POST和GET
 }
 
@@ -273,12 +291,7 @@ func (c *EchoContext) ParseForm() error {
 	return c.context.Request().ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表�?func (c *EchoContext) ParseMultipartForm(maxMemory int64) error {
+// ParseMultipartForm 解析多部分表�?`n
+func (c *EchoContext) ParseMultipartForm(maxMemory int64) error {
 	return c.context.Request().ParseMultipartForm(maxMemory)
 }
-
-
-
-
-
-

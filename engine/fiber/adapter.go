@@ -5,15 +5,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bufgot/web"
-	""
+	interfaces "github.com/bufgot/web"
 	"github.com/gofiber/fiber/v2"
 )
 
-// FiberAdapter 实现WebFramework接口
+// NewFiberAdapter 实现WebFramework接口
 type FiberAdapter struct{}
 
-// NewFiberAdapter 创建Fiber适配�?func NewFiberAdapter() *FiberAdapter {
+// NewFiberAdapter 创建Fiber适配�?
+func NewFiberAdapter() *FiberAdapter {
 	return &FiberAdapter{}
 }
 
@@ -22,11 +22,12 @@ func (f *FiberAdapter) Name() string {
 	return "fiber"
 }
 
-// NewRouter 创建新的路由�?func (f *FiberAdapter) NewRouter() interfaces.Router {
+// NewRouter 创建新的路由�?
+func (f *FiberAdapter) NewRouter() interfaces.Router {
 	return &FiberRouter{
 		app:    fiber.New(),
 		group:  nil, // 初始时没有路由组
-		logger: default.NewDefaultLogger(),
+		logger: interfaces.NewDefaultLogger(),
 	}
 }
 
@@ -50,7 +51,8 @@ func (r *FiberRouter) addRoute(method, path string, handler interfaces.Handler) 
 	r.currentRouter().Add(method, path, r.wrapHandler(handler))
 }
 
-// addUse 向当前路由器添加中间�?func (r *FiberRouter) addUse(middleware interfaces.Middleware) {
+// addUse 向当前路由器添加中间�?
+func (r *FiberRouter) addUse(middleware interfaces.Middleware) {
 	r.currentRouter().Use(r.wrapMiddleware(middleware))
 }
 
@@ -89,15 +91,18 @@ func (r *FiberRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间�?func (r *FiberRouter) Use(middleware interfaces.Middleware) {
+// Use 添加中间�?
+func (r *FiberRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start 启动服务�?func (r *FiberRouter) Start(addr string) error {
+// Start 启动服务�?
+func (r *FiberRouter) Start(addr string) error {
 	return r.app.Listen(addr)
 }
 
-// Group 创建路由�?func (r *FiberRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
+// Group 创建路由�?
+func (r *FiberRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	newGroup := r.currentRouter().Group(prefix)
 	for _, middleware := range middlewares {
 		newGroup.Use(r.wrapMiddleware(middleware))
@@ -109,11 +114,13 @@ func (r *FiberRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// Static 服务静态文�?func (r *FiberRouter) Static(prefix, root string) {
+// Static 服务静态文�?
+func (r *FiberRouter) Static(prefix, root string) {
 	r.currentRouter().Static(prefix, root)
 }
 
-// SetLogger 设置日志�?func (r *FiberRouter) SetLogger(logger interfaces.Logger) {
+// SetLogger 设置日志�
+func (r *FiberRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
@@ -195,33 +202,40 @@ func (c *FiberContext) HTML(code int, html string) error {
 	return c.context.Status(code).SendString(html)
 }
 
-// Redirect 重定�?func (c *FiberContext) Redirect(code int, url string) error {
+// Redirect 重定�?`n
+func (c *FiberContext) Redirect(code int, url string) error {
 	return c.context.Status(code).Redirect(url)
 }
 
-// Set 设置�?func (c *FiberContext) Set(key string, value interface{}) {
+// Set 设置�?`n
+func (c *FiberContext) Set(key string, value interface{}) {
 	c.context.Locals(key, value)
 }
 
-// Get 获取�?func (c *FiberContext) Get(key string) interface{} {
+// Get 获取�?`n
+func (c *FiberContext) Get(key string) interface{} {
 	return c.context.Locals(key)
 }
 
-// Context 返回Go上下�?func (c *FiberContext) Context() context.Context {
+// Context 返回Go上下�?`n
+func (c *FiberContext) Context() context.Context {
 	return c.context.Context()
 }
 
-// BindJSON 绑定JSON请求�?func (c *FiberContext) BindJSON(obj interface{}) error {
+// BindJSON 绑定JSON请求�?`n
+func (c *FiberContext) BindJSON(obj interface{}) error {
 	return c.context.BodyParser(obj)
 }
 
-// BindXML 绑定XML请求�?func (c *FiberContext) BindXML(obj interface{}) error {
+// BindXML 绑定XML请求�?`n
+func (c *FiberContext) BindXML(obj interface{}) error {
 	return c.context.BodyParser(obj)
 }
 
 // BindQuery 绑定查询参数到结构体
 func (c *FiberContext) BindQuery(obj interface{}) error {
-	// Fiber没有内置BindQuery，这里简化实�?	return nil
+	// Fiber没有内置BindQuery，这里简化实�?
+	return nil
 }
 
 // Cookie 获取Cookie
@@ -243,7 +257,8 @@ func (c *FiberContext) SetCookie(cookie *http.Cookie) {
 	c.context.Cookie(fiberCookie)
 }
 
-// Logger 返回日志�?func (c *FiberContext) Logger() interfaces.Logger {
+// Logger 返回日志�?`n
+func (c *FiberContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
 	}
@@ -255,25 +270,24 @@ func (c *FiberContext) XML(code int, obj interface{}) error {
 	return c.context.Status(code).XML(obj)
 }
 
-// FormValue 获取表单字段�?func (c *FiberContext) FormValue(key string) string {
+// FormValue 获取表单字段�?`n
+func (c *FiberContext) FormValue(key string) string {
 	return c.context.FormValue(key)
 }
 
-// PostForm 获取POST表单字段�?func (c *FiberContext) PostForm(key string) string {
+// PostForm 获取POST表单字段�?`n
+func (c *FiberContext) PostForm(key string) string {
 	return c.context.FormValue(key) // Fiber的FormValue处理POST数据
 }
 
 // ParseForm 解析表单
 func (c *FiberContext) ParseForm() error {
-	// Fiber自动解析，这里不需要额外操�?	return nil
+	// Fiber自动解析，这里不需要额外操�?
+	return nil
 }
 
-// ParseMultipartForm 解析多部分表�?func (c *FiberContext) ParseMultipartForm(maxMemory int64) error {
-	// Fiber自动处理多部分表单，这里不需要额外操�?	return nil
+// ParseMultipartForm 解析多部分表�?`n
+func (c *FiberContext) ParseMultipartForm(maxMemory int64) error {
+	// Fiber自动处理多部分表单，这里不需要额外操�?
+	return nil
 }
-
-
-
-
-
-

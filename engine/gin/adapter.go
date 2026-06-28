@@ -4,15 +4,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bufgot/web/loggers/stdlib"
-	"github.com/bufgot/web"
+	interfaces "github.com/bufgot/web"
 	"github.com/gin-gonic/gin"
 )
 
 // GinAdapter 实现WebFramework接口
 type GinAdapter struct{}
 
-// NewGinAdapter 创建Gin适配�?func NewGinAdapter() *GinAdapter {
+// NewGinAdapter 创建Gin适配�?
+func NewGinAdapter() *GinAdapter {
 	return &GinAdapter{}
 }
 
@@ -21,15 +21,17 @@ func (g *GinAdapter) Name() string {
 	return "gin"
 }
 
-// NewRouter 创建新的路由�?func (g *GinAdapter) NewRouter() interfaces.Router {
+// NewRouter 创建新的路由�?
+func (g *GinAdapter) NewRouter() interfaces.Router {
 	return &GinRouter{
 		gin:    gin.New(),
 		group:  nil, // 初始时没有路由组
-		logger: default.NewDefaultLogger(),
+		logger: interfaces.NewDefaultLogger(),
 	}
 }
 
-// GinRouter 适配Gin's路由�?type GinRouter struct {
+// GinRouter 适配Gin's路由�?
+type GinRouter struct {
 	gin    *gin.Engine
 	group  *gin.RouterGroup // 当前路由组，如果为nil则使用gin.Engine
 	logger interfaces.Logger
@@ -52,7 +54,8 @@ func (r *GinRouter) addRoute(method, path string, handler interfaces.Handler) {
 	}
 }
 
-// addUse 向当前路由器添加中间�?func (r *GinRouter) addUse(middleware interfaces.Middleware) {
+// addUse 向当前路由器添加中间�?
+func (r *GinRouter) addUse(middleware interfaces.Middleware) {
 	if r.group != nil {
 		r.group.Use(r.wrapMiddleware(middleware))
 	} else {
@@ -95,15 +98,18 @@ func (r *GinRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.addRoute("OPTIONS", path, handler)
 }
 
-// Use 添加中间�?func (r *GinRouter) Use(middleware interfaces.Middleware) {
+// Use 添加中间�?
+func (r *GinRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start 启动服务�?func (r *GinRouter) Start(addr string) error {
+// Start 启动服务�?
+func (r *GinRouter) Start(addr string) error {
 	return r.gin.Run(addr)
 }
 
-// Group 创建路由�?func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
+// Group 创建路由�
+func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	var newGroup *gin.RouterGroup
 	if r.group != nil {
 		newGroup = r.group.Group(prefix)
@@ -120,7 +126,8 @@ func (r *GinRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// Static 服务静态文�?func (r *GinRouter) Static(prefix, root string) {
+// Static 服务静态文�?
+func (r *GinRouter) Static(prefix, root string) {
 	if r.group != nil {
 		r.group.Static(prefix, root)
 	} else {
@@ -128,7 +135,8 @@ func (r *GinRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// SetLogger 设置日志�?func (r *GinRouter) SetLogger(logger interfaces.Logger) {
+// SetLogger 设置日志�?
+func (r *GinRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
@@ -157,7 +165,8 @@ func (r *GinRouter) wrapMiddleware(m interfaces.Middleware) gin.HandlerFunc {
 	}
 }
 
-// GinContext 适配Gin's上下�?type GinContext struct {
+// GinContext 适配Gin's上下�?
+type GinContext struct {
 	context *gin.Context
 	logger  interfaces.Logger
 }
@@ -210,29 +219,35 @@ func (c *GinContext) HTML(code int, html string) error {
 	return nil
 }
 
-// Redirect 重定�?func (c *GinContext) Redirect(code int, url string) error {
+// Redirect 重定�?
+func (c *GinContext) Redirect(code int, url string) error {
 	c.context.Redirect(code, url)
 	return nil
 }
 
-// Set 设置�?func (c *GinContext) Set(key string, value interface{}) {
+// Set 设置�
+func (c *GinContext) Set(key string, value interface{}) {
 	c.context.Set(key, value)
 }
 
-// Get 获取�?func (c *GinContext) Get(key string) interface{} {
+// Get 获取�?
+func (c *GinContext) Get(key string) interface{} {
 	val, _ := c.context.Get(key)
 	return val
 }
 
-// Context 返回Go上下�?func (c *GinContext) Context() context.Context {
+// Context 返回Go上下�?
+func (c *GinContext) Context() context.Context {
 	return c.context.Request.Context()
 }
 
-// BindJSON 绑定JSON请求�?func (c *GinContext) BindJSON(obj interface{}) error {
+// BindJSON 绑定JSON请求�?
+func (c *GinContext) BindJSON(obj interface{}) error {
 	return c.context.ShouldBindJSON(obj)
 }
 
-// BindXML 绑定XML请求�?func (c *GinContext) BindXML(obj interface{}) error {
+// BindXML 绑定XML请求�?
+func (c *GinContext) BindXML(obj interface{}) error {
 	return c.context.ShouldBindXML(obj)
 }
 
@@ -251,7 +266,8 @@ func (c *GinContext) SetCookie(cookie *http.Cookie) {
 	c.context.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, cookie.Secure, cookie.HttpOnly)
 }
 
-// Logger 返回日志�?func (c *GinContext) Logger() interfaces.Logger {
+// Logger 返回日志�?
+func (c *GinContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
 	}
@@ -264,11 +280,13 @@ func (c *GinContext) XML(code int, obj interface{}) error {
 	return nil
 }
 
-// FormValue 获取表单字段�?func (c *GinContext) FormValue(key string) string {
+// FormValue 获取表单字段�?
+func (c *GinContext) FormValue(key string) string {
 	return c.context.Request.FormValue(key)
 }
 
-// PostForm 获取POST表单字段�?func (c *GinContext) PostForm(key string) string {
+// PostForm 获取POST表单字段�?
+func (c *GinContext) PostForm(key string) string {
 	return c.context.PostForm(key)
 }
 
@@ -277,11 +295,7 @@ func (c *GinContext) ParseForm() error {
 	return c.context.Request.ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表�?func (c *GinContext) ParseMultipartForm(maxMemory int64) error {
+// ParseMultipartForm 解析多部分表�?
+func (c *GinContext) ParseMultipartForm(maxMemory int64) error {
 	return c.context.Request.ParseMultipartForm(maxMemory)
 }
-
-
-
-
-

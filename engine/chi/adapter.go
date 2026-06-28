@@ -12,15 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bufgot/web"
-	""
+	interfaces "github.com/bufgot/web"
 	"github.com/go-chi/chi/v5"
 )
 
 // ChiAdapter 实现WebFramework接口
 type ChiAdapter struct{}
 
-// NewChiAdapter 创建Chi适配�?func NewChiAdapter() *ChiAdapter {
+// NewChiAdapter 创建Chi适配
+func NewChiAdapter() *ChiAdapter {
 	return &ChiAdapter{}
 }
 
@@ -29,14 +29,16 @@ func (c *ChiAdapter) Name() string {
 	return "chi"
 }
 
-// NewRouter 创建新的路由�?func (c *ChiAdapter) NewRouter() interfaces.Router {
+// NewRouter 创建新的路由
+func (c *ChiAdapter) NewRouter() interfaces.Router {
 	return &ChiRouter{
 		router: chi.NewRouter(),
-		logger: default.NewDefaultLogger(),
+		logger: interfaces.NewDefaultLogger(),
 	}
 }
 
-// ChiRouter 适配Chi路由�?type ChiRouter struct {
+// ChiRouter 适配Chi路由
+type ChiRouter struct {
 	router chi.Router
 	logger interfaces.Logger
 }
@@ -76,15 +78,18 @@ func (r *ChiRouter) OPTIONS(path string, handler interfaces.Handler) {
 	r.router.Options(path, r.wrapHandler(handler))
 }
 
-// Use 添加中间�?func (r *ChiRouter) Use(middleware interfaces.Middleware) {
+// Use 添加中间
+func (r *ChiRouter) Use(middleware interfaces.Middleware) {
 	r.router.Use(r.wrapMiddleware(middleware))
 }
 
-// Start 启动服务�?func (r *ChiRouter) Start(addr string) error {
+// Start 启动服务
+func (r *ChiRouter) Start(addr string) error {
 	return http.ListenAndServe(addr, r.router)
 }
 
-// Group 创建路由�?func (r *ChiRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
+// Group 创建路由
+func (r *ChiRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	group := r.router.Route(prefix, func(router chi.Router) {
 		for _, middleware := range middlewares {
 			router.Use(r.wrapMiddleware(middleware))
@@ -95,11 +100,13 @@ func (r *ChiRouter) OPTIONS(path string, handler interfaces.Handler) {
 	}
 }
 
-// Static 服务静态文�?func (r *ChiRouter) Static(prefix, root string) {
+// Static 服务静态文
+func (r *ChiRouter) Static(prefix, root string) {
 	r.router.Handle(prefix+"/*", http.StripPrefix(prefix, http.FileServer(http.Dir(root))))
 }
 
-// SetLogger 设置日志�?func (r *ChiRouter) SetLogger(logger interfaces.Logger) {
+// SetLogger 设置日志
+func (r *ChiRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
@@ -111,7 +118,8 @@ func (r *ChiRouter) wrapHandler(h interfaces.Handler) http.HandlerFunc {
 	}
 }
 
-// wrapMiddleware 将统一中间件包装为chi中间�?func (r *ChiRouter) wrapMiddleware(m interfaces.Middleware) func(http.Handler) http.Handler {
+// wrapMiddleware 将统一中间件包装为chi中间`n
+func (r *ChiRouter) wrapMiddleware(m interfaces.Middleware) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := &ChiContext{writer: w, request: req, logger: r.logger}
@@ -128,7 +136,8 @@ func (r *ChiRouter) wrapHandler(h interfaces.Handler) http.HandlerFunc {
 	}
 }
 
-// ChiContext 适配Chi上下�?type ChiContext struct {
+// ChiContext 适配Chi上下
+type ChiContext struct {
 	writer  http.ResponseWriter
 	request *http.Request
 	logger  interfaces.Logger
@@ -187,28 +196,34 @@ func (c *ChiContext) HTML(code int, html string) error {
 	return err
 }
 
-// Redirect 重定�?func (c *ChiContext) Redirect(code int, url string) error {
+// Redirect 重定`n
+func (c *ChiContext) Redirect(code int, url string) error {
 	http.Redirect(c.writer, c.request, url, code)
 	return nil
 }
 
-// Set 设置�?func (c *ChiContext) Set(key string, value interface{}) {
+// Set 设置`n
+func (c *ChiContext) Set(key string, value interface{}) {
 	c.request = c.request.WithContext(context.WithValue(c.request.Context(), key, value))
 }
 
-// Get 获取�?func (c *ChiContext) Get(key string) interface{} {
+// Get 获取`n
+func (c *ChiContext) Get(key string) interface{} {
 	return c.request.Context().Value(key)
 }
 
-// Context 返回Go上下�?func (c *ChiContext) Context() context.Context {
+// Context 返回Go上下`n
+func (c *ChiContext) Context() context.Context {
 	return c.request.Context()
 }
 
-// FormValue 获取表单字段�?func (c *ChiContext) FormValue(key string) string {
+// FormValue 获取表单字段`n
+func (c *ChiContext) FormValue(key string) string {
 	return c.request.FormValue(key)
 }
 
-// PostForm 获取POST表单字段�?func (c *ChiContext) PostForm(key string) string {
+// PostForm 获取POST表单字段`n
+func (c *ChiContext) PostForm(key string) string {
 	if c.request.Method == "POST" || c.request.Method == "PUT" || c.request.Method == "PATCH" {
 		return c.request.PostFormValue(key)
 	}
@@ -220,15 +235,18 @@ func (c *ChiContext) ParseForm() error {
 	return c.request.ParseForm()
 }
 
-// ParseMultipartForm 解析多部分表�?func (c *ChiContext) ParseMultipartForm(maxMemory int64) error {
+// ParseMultipartForm 解析多部分表`n
+func (c *ChiContext) ParseMultipartForm(maxMemory int64) error {
 	return c.request.ParseMultipartForm(maxMemory)
 }
 
-// BindJSON 绑定JSON请求�?func (c *ChiContext) BindJSON(obj interface{}) error {
+// BindJSON 绑定JSON请求`n
+func (c *ChiContext) BindJSON(obj interface{}) error {
 	return json.NewDecoder(c.request.Body).Decode(obj)
 }
 
-// BindXML 绑定XML请求�?func (c *ChiContext) BindXML(obj interface{}) error {
+// BindXML 绑定XML请求`n
+func (c *ChiContext) BindXML(obj interface{}) error {
 	return xml.NewDecoder(c.request.Body).Decode(obj)
 }
 
@@ -238,7 +256,8 @@ func (c *ChiContext) BindQuery(obj interface{}) error {
 	return mapForm(values, obj)
 }
 
-// FormFile 获取上传的文�?func (c *ChiContext) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
+// FormFile 获取上传的文`n
+func (c *ChiContext) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
 	if c.request.MultipartForm == nil {
 		c.ParseMultipartForm(32 << 20) // 32MB
 	}
@@ -251,12 +270,14 @@ func (c *ChiContext) BindQuery(obj interface{}) error {
 	return nil, nil, http.ErrMissingFile
 }
 
-// MultipartForm 获取多部分表�?func (c *ChiContext) MultipartForm() (*multipart.Form, error) {
+// MultipartForm 获取多部分表`n
+func (c *ChiContext) MultipartForm() (*multipart.Form, error) {
 	err := c.ParseMultipartForm(32 << 20)
 	return c.request.MultipartForm, err
 }
 
-// SaveUploadedFile 保存上传的文�?func (c *ChiContext) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
+// SaveUploadedFile 保存上传的文`n
+func (c *ChiContext) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
 	src, err := file.Open()
 	if err != nil {
 		return err
@@ -287,7 +308,8 @@ func (c *ChiContext) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(c.writer, cookie)
 }
 
-// Logger 返回日志�?func (c *ChiContext) Logger() interfaces.Logger {
+// Logger 返回日志`n
+func (c *ChiContext) Logger() interfaces.Logger {
 	if logger, ok := c.Get("logger").(interfaces.Logger); ok && logger != nil {
 		return logger
 	}
@@ -310,7 +332,8 @@ func writeJSON(w http.ResponseWriter, obj interface{}) error {
 	return err
 }
 
-// mapForm 将表单值映射到结构体字�?func mapForm(values map[string][]string, obj interface{}) error {
+// mapForm 将表单值映射到结构体字段
+func mapForm(values map[string][]string, obj interface{}) error {
 	v := reflect.ValueOf(obj).Elem()
 	t := v.Type()
 
@@ -342,9 +365,3 @@ func writeJSON(w http.ResponseWriter, obj interface{}) error {
 	}
 	return nil
 }
-
-
-
-
-
-
