@@ -56,6 +56,7 @@ type Context interface {
 	// Response related
 	Status(code int)
 	JSON(code int, obj interface{}) error
+	XML(code int, obj interface{}) error
 	Text(code int, text string) error
 	HTML(code int, html string) error
 	Redirect(code int, url string) error
@@ -66,6 +67,11 @@ type Context interface {
 
 	// Logging
 	Logger() log.Logger
+
+	// Binding
+	BindJSON(obj interface{}) error
+	BindXML(obj interface{}) error
+	BindQuery(obj interface{}) error
 
 	// Others
 	Set(key string, value interface{})

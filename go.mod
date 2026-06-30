@@ -1,6 +1,6 @@
 module github.com/bufgot/web
 
-go 1.25.5
+go 1.26
 
 require (
 	github.com/bufgot/log v0.0.0-20260610165443-8e958597d775
