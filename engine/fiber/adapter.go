@@ -222,6 +222,10 @@ func (c *FiberContext) Context() context.Context {
 	return c.context.Context()
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter.
+// Fiber uses fasthttp internally; returns nil.
+func (c *FiberContext) ResponseWriter() http.ResponseWriter { return nil }
+
 // BindJSON binds the JSON request body
 func (c *FiberContext) BindJSON(obj interface{}) error {
 	return c.context.BodyParser(obj)

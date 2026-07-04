@@ -241,6 +241,9 @@ func (c *GinContext) Context() context.Context {
 	return c.context.Request.Context()
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter.
+func (c *GinContext) ResponseWriter() http.ResponseWriter { return c.context.Writer }
+
 // BindJSON binds the JSON request�?
 func (c *GinContext) BindJSON(obj interface{}) error {
 	return c.context.ShouldBindJSON(obj)

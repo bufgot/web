@@ -259,6 +259,10 @@ func (c *FasthttpContext) Context() context.Context {
 	return context.Background()
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter.
+// Fasthttp does not provide http.ResponseWriter; returns nil.
+func (c *FasthttpContext) ResponseWriter() http.ResponseWriter { return nil }
+
 // BindJSON binds the JSON request body
 func (c *FasthttpContext) BindJSON(obj interface{}) error {
 	return json.Unmarshal(c.context.Request.Body(), obj)

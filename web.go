@@ -77,6 +77,7 @@ type Context interface {
 	Set(key string, value interface{})
 	Get(key string) interface{}
 	Context() context.Context
+	ResponseWriter() http.ResponseWriter
 }
 
 // Router defines the unified router interface

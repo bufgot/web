@@ -233,6 +233,14 @@ func (c *EchoContext) Context() context.Context {
 	return c.context.Request().Context()
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter.
+func (c *EchoContext) ResponseWriter() http.ResponseWriter {
+	if w, ok := c.context.Response().Writer.(http.ResponseWriter); ok {
+		return w
+	}
+	return nil
+}
+
 // BindJSON binds the JSON request body
 func (c *EchoContext) BindJSON(obj interface{}) error {
 	return c.context.Bind(obj)

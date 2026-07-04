@@ -275,6 +275,10 @@ func (c *HertzContext) Context() context.Context {
 	return c.ctx
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter.
+// Hertz does not provide http.ResponseWriter; returns nil.
+func (c *HertzContext) ResponseWriter() http.ResponseWriter { return nil }
+
 // BindJSON binds the JSON request body
 func (c *HertzContext) BindJSON(obj interface{}) error {
 	return c.context.BindJSON(obj)

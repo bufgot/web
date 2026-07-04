@@ -110,6 +110,9 @@ func (r *ChiRouter) SetLogger(logger interfaces.Logger) {
 	r.logger = logger
 }
 
+// Router returns the underlying chi.Router for advanced use cases like starting the HTTP server.
+func (r *ChiRouter) Router() chi.Router { return r.router }
+
 // wrapHandler wraps the unified handler as a chi handler
 func (r *ChiRouter) wrapHandler(h interfaces.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -216,6 +219,9 @@ func (c *ChiContext) Get(key string) interface{} {
 func (c *ChiContext) Context() context.Context {
 	return c.request.Context()
 }
+
+// ResponseWriter returns the underlying http.ResponseWriter.
+func (c *ChiContext) ResponseWriter() http.ResponseWriter { return c.writer }
 
 // FormValue retrieves a form field value
 func (c *ChiContext) FormValue(key string) string {
