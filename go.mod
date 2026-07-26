@@ -3,7 +3,7 @@ module github.com/bufgot/web
 go 1.26
 
 require (
-	github.com/bufgot/log v0.0.0-20260610165443-8e958597d775
+	github.com/bufgot/log v0.0.1
 	github.com/cloudwego/hertz v0.10.4
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/chi/v5 v5.2.5
