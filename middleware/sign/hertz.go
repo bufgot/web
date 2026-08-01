@@ -124,3 +124,118 @@ func SignResponseHertz(cfg ServerSignConfig, hdr HeaderNames) app.HandlerFunc {
 		reqCtx.Response.Header.Set(h.ResSign, headers.Sign)
 	}
 }
+
+// ============================================================================
+// Dynamic Hertz Middleware (hot-reload)
+// ============================================================================
+
+// VerifyRequestHertzDynamic is like VerifyRequestHertz but reads config
+// from a DynamicRequestVerifyConfig on every request.
+func VerifyRequestHertzDynamic(dynCfg *DynamicRequestVerifyConfig, hdr HeaderNames) app.HandlerFunc {
+	h := hdr.Effective()
+
+	return func(c context.Context, reqCtx *app.RequestContext) {
+		cfg := dynCfg.Load()
+		if !cfg.Enable || len(cfg.Verifications) == 0 {
+			reqCtx.Next(c)
+			return
+		}
+
+		if shouldSkip(string(reqCtx.Path()), cfg.SkipPaths) {
+			reqCtx.Next(c)
+			return
+		}
+
+		appStr := reqCtx.Request.Header.Get(h.ReqApp)
+		ts := reqCtx.Request.Header.Get(h.ReqTimestamp)
+		nonce := reqCtx.Request.Header.Get(h.ReqNonce)
+		sig := reqCtx.Request.Header.Get(h.ReqSign)
+
+		if appStr == "" || ts == "" || nonce == "" || sig == "" {
+			reqCtx.AbortWithStatusJSON(http.StatusUnauthorized, map[string]string{"error": "missing signature headers"})
+			return
+		}
+
+		item := cfg.LookupApp(appStr)
+		if item == nil {
+			reqCtx.AbortWithStatusJSON(http.StatusUnauthorized, map[string]string{"error": fmt.Sprintf("unknown or disabled app %q", appStr)})
+			return
+		}
+
+		verifier, err := NewVerifier(SignMethod(item.Method), SignerOpts{
+			Salt:      item.Salt,
+			PublicKey: item.PublicKey,
+		})
+		if err != nil {
+			reqCtx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("verifier init: %v", err)})
+			return
+		}
+
+		if err := VerifyRequest(VerifyRequestParams{
+			AppHeader:       appStr,
+			TimestampHeader: ts,
+			NonceHeader:     nonce,
+			SignHeader:      sig,
+			Verifier:        verifier,
+			Path:            string(reqCtx.Path()),
+			Body:            reqCtx.Request.Body(),
+			TimeoutMS:       item.Timeout,
+			HeaderNames:     hdr,
+		}); err != nil {
+			reqCtx.AbortWithStatusJSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+
+		reqCtx.Next(c)
+	}
+}
+
+// SignResponseHertzDynamic is like SignResponseHertz but reads config
+// from a DynamicServerSignConfig on every request.
+func SignResponseHertzDynamic(dynCfg *DynamicServerSignConfig, hdr HeaderNames) app.HandlerFunc {
+	h := hdr.Effective()
+
+	return func(c context.Context, reqCtx *app.RequestContext) {
+		cfg := dynCfg.Load()
+		if !cfg.Enabled() {
+			reqCtx.Next(c)
+			return
+		}
+
+		signer, err := NewSigner(SignMethod(cfg.Method), cfg.toSignerOpts())
+		if err != nil {
+			reqCtx.Next(c)
+			return
+		}
+
+		if shouldSkip(string(reqCtx.Path()), cfg.SkipPaths) {
+			reqCtx.Next(c)
+			return
+		}
+
+		bodyLen := len(reqCtx.Response.Body())
+
+		reqCtx.Next(c)
+
+		respBody := reqCtx.Response.Body()[bodyLen:]
+		statusCode := reqCtx.Response.StatusCode()
+
+		ts := time.Now()
+		headers, err := SignResponse(SignResponseParams{
+			AppID:       cfg.AppID,
+			Method:      SignMethod(cfg.Method),
+			Signer:      signer,
+			StatusCode:  statusCode,
+			Body:        respBody,
+			HeaderNames: hdr,
+		}, ts)
+		if err != nil {
+			return
+		}
+
+		reqCtx.Response.Header.Set(h.ResApp, headers.App)
+		reqCtx.Response.Header.Set(h.ResTimestamp, headers.Timestamp)
+		reqCtx.Response.Header.Set(h.ResNonce, headers.Nonce)
+		reqCtx.Response.Header.Set(h.ResSign, headers.Sign)
+	}
+}
