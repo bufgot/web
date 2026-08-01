@@ -3,6 +3,7 @@ package gin
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	interfaces "github.com/bufgot/web"
@@ -265,4 +266,283 @@ func TestRouter_Static(t *testing.T) {
 	a := NewGinAdapter()
 	r := a.NewRouter()
 	r.Static("/static", ".")
+}
+
+// ============================================================
+// Additional router & context coverage tests
+// ============================================================
+
+func TestRouter_Static_WithGroup(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	g := r.Group("/api")
+	g.Static("/static", ".")
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+}
+
+func TestRouter_Group_Chained(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	g1 := r.Group("/v1")
+	g2 := g1.Group("/users")
+	g2.GET("/list", func(c interfaces.Context) error {
+		return c.Text(200, "ok")
+	})
+
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	resp, _ := http.Get(srv.URL + "/v1/users/list")
+	resp.Body.Close()
+}
+
+func TestRouter_Group_WithMiddleware(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	g := r.Group("/v2", func(next interfaces.Handler) interfaces.Handler {
+		return func(c interfaces.Context) error {
+			return next(c)
+		}
+	})
+	g.GET("/test", func(c interfaces.Context) error {
+		return c.Text(200, "ok")
+	})
+
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	resp, _ := http.Get(srv.URL + "/v2/test")
+	resp.Body.Close()
+}
+
+func TestContext_HTML(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/html", func(c interfaces.Context) error {
+		return c.HTML(200, "<h1>hello</h1>")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/html")
+}
+
+func TestContext_XML(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/xml", func(c interfaces.Context) error {
+		type data struct {
+			Name string `xml:"name"`
+		}
+		return c.XML(200, data{Name: "test"})
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/xml")
+}
+
+func TestContext_RequestMethodPath(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/req-test", func(c interfaces.Context) error {
+		_ = c.Request()
+		_ = c.Method()
+		_ = c.Path()
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/req-test")
+}
+
+func TestContext_QueryParam(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/qp", func(c interfaces.Context) error {
+		_ = c.QueryParam("name")
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/qp?name=j")
+}
+
+func TestContext_Param(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/users/:id", func(c interfaces.Context) error {
+		_ = c.Param("id")
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/users/42")
+}
+
+func TestContext_Status(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/status", func(c interfaces.Context) error {
+		c.Status(201)
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/status")
+}
+
+func TestContext_ContextMethod(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/ctx", func(c interfaces.Context) error {
+		_ = c.Context()
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/ctx")
+}
+
+func TestContext_ResponseWriter(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/rw", func(c interfaces.Context) error {
+		_ = c.ResponseWriter()
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/rw")
+}
+
+func TestContext_BindXML(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.POST("/bindxml", func(c interfaces.Context) error {
+		var data map[string]string
+		_ = c.BindXML(&data)
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	req, _ := http.NewRequest("POST", srv.URL+"/bindxml", strings.NewReader("<root><name>x</name></root>"))
+	req.Header.Set("Content-Type", "application/xml")
+	http.DefaultClient.Do(req)
+}
+
+func TestContext_BindQuery(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/bindq", func(c interfaces.Context) error {
+		var data map[string]string
+		_ = c.BindQuery(&data)
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/bindq?a=1")
+}
+
+func TestContext_Cookie_Read(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/cookier", func(c interfaces.Context) error {
+		_, _ = c.Cookie("test")
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	req, _ := http.NewRequest("GET", srv.URL+"/cookier", nil)
+	req.AddCookie(&http.Cookie{Name: "test", Value: "v"})
+	http.DefaultClient.Do(req)
+}
+
+func TestContext_Logger(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/logger", func(c interfaces.Context) error {
+		_ = c.Logger()
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/logger")
+}
+
+func TestContext_Logger_WithSet(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.GET("/logger2", func(c interfaces.Context) error {
+		c.Set("logger", "not-a-logger")
+		_ = c.Logger()
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.Get(srv.URL + "/logger2")
+}
+
+func TestContext_FormValue(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.POST("/formval", func(c interfaces.Context) error {
+		_ = c.FormValue("field")
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.PostForm(srv.URL+"/formval", map[string][]string{"field": {"hello"}})
+}
+
+func TestContext_PostForm(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.POST("/postform", func(c interfaces.Context) error {
+		_ = c.PostForm("field")
+		return c.Text(200, "ok")
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.PostForm(srv.URL+"/postform", map[string][]string{"field": {"world"}})
+}
+
+func TestContext_ParseForm(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.POST("/pf", func(c interfaces.Context) error {
+		return c.ParseForm()
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	http.PostForm(srv.URL+"/pf", map[string][]string{"a": {"1"}})
+}
+
+func TestContext_ParseMultipartForm(t *testing.T) {
+	a := NewGinAdapter()
+	r := a.NewRouter()
+	r.POST("/pmf", func(c interfaces.Context) error {
+		return c.ParseMultipartForm(32 << 20)
+	})
+	engine := r.(*GinRouter).GetGinEngine()
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	resp, _ := http.Post(srv.URL+"/pmf", "multipart/form-data", nil)
+	resp.Body.Close()
 }

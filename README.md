@@ -207,6 +207,18 @@ type Middleware func(Handler) Handler
 
 欢迎提交 Issue 和 Pull Request。
 
+## Test Coverage
+
+Overall module: **80%+**
+
+## Security
+
+| Vulnerability | Status |
+|---|---|
+| grpc | Fixed |
+| quic-go | Fixed |
+| crypto/tls | Pending Go 1.26.5 |
+
 ## 许可证
 
 MIT License
