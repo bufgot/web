@@ -241,6 +241,11 @@ func (c *EchoContext) ResponseWriter() http.ResponseWriter {
 	return nil
 }
 
+// SetResponseWriter replaces the underlying http.ResponseWriter.
+func (c *EchoContext) SetResponseWriter(w http.ResponseWriter) {
+	c.context.Response().Writer = w
+}
+
 // BindJSON binds the JSON request body
 func (c *EchoContext) BindJSON(obj interface{}) error {
 	return c.context.Bind(obj)

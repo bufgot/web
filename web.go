@@ -73,11 +73,14 @@ type Context interface {
 	BindXML(obj interface{}) error
 	BindQuery(obj interface{}) error
 
+	// ResponseWriter control
+	ResponseWriter() http.ResponseWriter
+	SetResponseWriter(w http.ResponseWriter)
+
 	// Others
 	Set(key string, value interface{})
 	Get(key string) interface{}
 	Context() context.Context
-	ResponseWriter() http.ResponseWriter
 }
 
 // Router defines the unified router interface

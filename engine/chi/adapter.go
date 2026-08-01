@@ -223,6 +223,9 @@ func (c *ChiContext) Context() context.Context {
 // ResponseWriter returns the underlying http.ResponseWriter.
 func (c *ChiContext) ResponseWriter() http.ResponseWriter { return c.writer }
 
+// SetResponseWriter replaces the underlying http.ResponseWriter.
+func (c *ChiContext) SetResponseWriter(w http.ResponseWriter) { c.writer = w }
+
 // FormValue retrieves a form field value
 func (c *ChiContext) FormValue(key string) string {
 	return c.request.FormValue(key)

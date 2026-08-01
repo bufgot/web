@@ -226,6 +226,9 @@ func (c *FiberContext) Context() context.Context {
 // Fiber uses fasthttp internally; returns nil.
 func (c *FiberContext) ResponseWriter() http.ResponseWriter { return nil }
 
+// SetResponseWriter is a no-op for fiber (no http.ResponseWriter).
+func (c *FiberContext) SetResponseWriter(w http.ResponseWriter) {}
+
 // BindJSON binds the JSON request body
 func (c *FiberContext) BindJSON(obj interface{}) error {
 	return c.context.BodyParser(obj)

@@ -1,7 +1,10 @@
 package gin
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 
 	interfaces "github.com/bufgot/web"
@@ -244,6 +247,16 @@ func (c *GinContext) Context() context.Context {
 // ResponseWriter returns the underlying http.ResponseWriter.
 func (c *GinContext) ResponseWriter() http.ResponseWriter { return c.context.Writer }
 
+// SetResponseWriter replaces the underlying http.ResponseWriter.
+func (c *GinContext) SetResponseWriter(w http.ResponseWriter) {
+	if gw, ok := w.(gin.ResponseWriter); ok {
+		c.context.Writer = gw
+		return
+	}
+	// Wrap plain http.ResponseWriter into gin.ResponseWriter.
+	c.context.Writer = &ginWriterAdapter{ResponseWriter: w}
+}
+
 // BindJSON binds the JSON request�?
 func (c *GinContext) BindJSON(obj interface{}) error {
 	return c.context.ShouldBindJSON(obj)
@@ -301,4 +314,65 @@ func (c *GinContext) ParseForm() error {
 // ParseMultipartForm parses the multipart form
 func (c *GinContext) ParseMultipartForm(maxMemory int64) error {
 	return c.context.Request.ParseMultipartForm(maxMemory)
+}
+
+// ginWriterAdapter wraps an http.ResponseWriter to satisfy gin.ResponseWriter.
+type ginWriterAdapter struct {
+	http.ResponseWriter
+	status int
+	size   int
+}
+
+func (w *ginWriterAdapter) WriteHeader(statusCode int) {
+	w.status = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *ginWriterAdapter) Write(b []byte) (int, error) {
+	n, err := w.ResponseWriter.Write(b)
+	w.size += n
+	return n, err
+}
+
+func (w *ginWriterAdapter) WriteString(s string) (int, error) {
+	return w.Write([]byte(s))
+}
+
+func (w *ginWriterAdapter) WriteHeaderNow() {}
+
+func (w *ginWriterAdapter) Status() int {
+	if w.status == 0 {
+		return 200
+	}
+	return w.status
+}
+
+func (w *ginWriterAdapter) Size() int     { return w.size }
+func (w *ginWriterAdapter) Written() bool { return w.size > 0 || w.status != 0 }
+
+func (w *ginWriterAdapter) Pusher() http.Pusher {
+	if p, ok := w.ResponseWriter.(http.Pusher); ok {
+		return p
+	}
+	return nil
+}
+
+func (w *ginWriterAdapter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if h, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return h.Hijack()
+	}
+	return nil, nil, fmt.Errorf("ginWriterAdapter: underlying writer does not support Hijack")
+}
+
+func (w *ginWriterAdapter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func (w *ginWriterAdapter) CloseNotify() <-chan bool {
+	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	return nil
 }

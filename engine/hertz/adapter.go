@@ -279,6 +279,9 @@ func (c *HertzContext) Context() context.Context {
 // Hertz does not provide http.ResponseWriter; returns nil.
 func (c *HertzContext) ResponseWriter() http.ResponseWriter { return nil }
 
+// SetResponseWriter is a no-op for hertz (no http.ResponseWriter).
+func (c *HertzContext) SetResponseWriter(w http.ResponseWriter) {}
+
 // BindJSON binds the JSON request body
 func (c *HertzContext) BindJSON(obj interface{}) error {
 	return c.context.BindJSON(obj)
