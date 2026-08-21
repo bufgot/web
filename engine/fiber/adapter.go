@@ -101,6 +101,28 @@ func (r *FiberRouter) Start(addr string) error {
 	return r.app.Listen(addr)
 }
 
+// Shutdown gracefully shuts down the Fiber server.
+// Fiber's native Shutdown() takes no context, so bridge it: run Shutdown in a
+// goroutine and return early when ctx expires.
+func (r *FiberRouter) Shutdown(ctx context.Context) error {
+	if r.app == nil {
+		return nil
+	}
+	done := make(chan error, 1)
+	go func() {
+		done <- r.app.Shutdown()
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// compile-time assertion that FiberRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*FiberRouter)(nil)
+
 // Group creates a route group
 func (r *FiberRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
 	newGroup := r.currentRouter().Group(prefix)

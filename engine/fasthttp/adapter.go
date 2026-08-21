@@ -102,11 +102,33 @@ func (r *FasthttpRouter) Use(middleware interfaces.Middleware) {
 
 // Start starts the server
 func (r *FasthttpRouter) Start(addr string) error {
-	server := &fasthttp.Server{
+	r.router = &fasthttp.Server{
 		Handler: r.handleRequest,
 	}
-	return server.ListenAndServe(addr)
+	return r.router.ListenAndServe(addr)
 }
+
+// Shutdown gracefully shuts down the Fasthttp server.
+// Fasthttp's native Shutdown() takes no context, so bridge it: run Shutdown in a
+// goroutine and return early when ctx expires.
+func (r *FasthttpRouter) Shutdown(ctx context.Context) error {
+	if r.router == nil {
+		return nil
+	}
+	done := make(chan error, 1)
+	go func() {
+		done <- r.router.Shutdown()
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// compile-time assertion that FasthttpRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*FasthttpRouter)(nil)
 
 // Group creates a route group
 func (r *FasthttpRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {

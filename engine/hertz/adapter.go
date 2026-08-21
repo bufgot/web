@@ -152,6 +152,17 @@ func (r *HertzRouter) Group(prefix string, middlewares ...interfaces.Middleware)
 	return group
 }
 
+// Shutdown gracefully shuts down the Hertz server.
+func (r *HertzRouter) Shutdown(ctx context.Context) error {
+	if r.server == nil {
+		return nil
+	}
+	return r.server.Shutdown(ctx)
+}
+
+// compile-time assertion that HertzRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*HertzRouter)(nil)
+
 // Static serves static files
 func (r *HertzRouter) Static(prefix, root string) {
 	r.staticPaths[prefix] = root

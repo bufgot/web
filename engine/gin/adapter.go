@@ -38,6 +38,7 @@ type GinRouter struct {
 	gin    *gin.Engine
 	group  *gin.RouterGroup // current route group; if nil, gin.Engine is used
 	logger interfaces.Logger
+	server *http.Server // underlying http.Server created in Start
 }
 
 // currentRouter returns the currently active router
@@ -106,10 +107,25 @@ func (r *GinRouter) Use(middleware interfaces.Middleware) {
 	r.addUse(middleware)
 }
 
-// Start starts the server
+// Start starts the server.
 func (r *GinRouter) Start(addr string) error {
-	return r.gin.Run(addr)
+	r.server = &http.Server{
+		Addr:    addr,
+		Handler: r.gin,
+	}
+	return r.server.ListenAndServe()
 }
+
+// Shutdown gracefully shuts down the HTTP server.
+func (r *GinRouter) Shutdown(ctx context.Context) error {
+	if r.server == nil {
+		return nil
+	}
+	return r.server.Shutdown(ctx)
+}
+
+// compile-time assertion that GinRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*GinRouter)(nil)
 
 // Group creates a route group
 func (r *GinRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {
@@ -159,7 +175,7 @@ func (r *GinRouter) wrapHandler(h interfaces.Handler) gin.HandlerFunc {
 // wrapMiddleware wraps a shim.Middleware as a gin.HandlerFunc
 func (r *GinRouter) wrapMiddleware(m interfaces.Middleware) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := &GinContext{context: c}
+		ctx := &GinContext{context: c, logger: r.logger}
 		handler := m(func(ctx interfaces.Context) error {
 			c.Next()
 			return nil
@@ -218,7 +234,7 @@ func (c *GinContext) Text(code int, text string) error {
 
 // HTML returns an HTML response
 func (c *GinContext) HTML(code int, html string) error {
-	c.context.HTML(code, html, nil)
+	c.context.Data(code, "text/html; charset=utf-8", []byte(html))
 	return nil
 }
 

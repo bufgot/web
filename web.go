@@ -105,10 +105,10 @@ type WebFramework interface {
 	NewRouter() Router
 }
 
-// Lifecycle: start and graceful shutdown using a configured Router
+// Lifecycle: start and graceful shutdown using a configured Router.
+// Router implementations (one per engine adapter) provide Start and Shutdown,
+// so any *XxxRouter satisfies this interface directly.
 type Lifecycle interface {
-	Start(r Router, addr string) error
-	Shutdown(r Router, ctx context.Context) error
+	Start(addr string) error
+	Shutdown(ctx context.Context) error
 }
-
-// WebFramework is Lifecycle-compatible (optional)

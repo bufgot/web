@@ -41,6 +41,7 @@ func (c *ChiAdapter) NewRouter() interfaces.Router {
 type ChiRouter struct {
 	router chi.Router
 	logger interfaces.Logger
+	server *http.Server // underlying http.Server created in Start
 }
 
 // GET registers a GET route
@@ -83,10 +84,25 @@ func (r *ChiRouter) Use(middleware interfaces.Middleware) {
 	r.router.Use(r.wrapMiddleware(middleware))
 }
 
-// Start starts the server
+// Start starts the server.
 func (r *ChiRouter) Start(addr string) error {
-	return http.ListenAndServe(addr, r.router)
+	r.server = &http.Server{
+		Addr:    addr,
+		Handler: r.router,
+	}
+	return r.server.ListenAndServe()
 }
+
+// Shutdown gracefully shuts down the HTTP server.
+func (r *ChiRouter) Shutdown(ctx context.Context) error {
+	if r.server == nil {
+		return nil
+	}
+	return r.server.Shutdown(ctx)
+}
+
+// compile-time assertion that ChiRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*ChiRouter)(nil)
 
 // Group creates a route group
 func (r *ChiRouter) Group(prefix string, middlewares ...interfaces.Middleware) interfaces.Router {

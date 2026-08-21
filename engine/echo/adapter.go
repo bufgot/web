@@ -127,6 +127,14 @@ func (r *EchoRouter) Group(prefix string, middlewares ...interfaces.Middleware) 
 	}
 }
 
+// Shutdown gracefully shuts down the Echo server.
+func (r *EchoRouter) Shutdown(ctx context.Context) error {
+	return r.echo.Shutdown(ctx)
+}
+
+// compile-time assertion that EchoRouter satisfies interfaces.Lifecycle.
+var _ interfaces.Lifecycle = (*EchoRouter)(nil)
+
 // Static serves static files
 func (r *EchoRouter) Static(prefix, root string) {
 	if r.group != nil {
@@ -153,7 +161,7 @@ func (r *EchoRouter) wrapHandler(h interfaces.Handler) echo.HandlerFunc {
 func (r *EchoRouter) wrapMiddleware(m interfaces.Middleware) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			ctx := &EchoContext{context: c}
+			ctx := &EchoContext{context: c, logger: r.logger}
 			handler := m(func(ctx interfaces.Context) error {
 				return next(c)
 			})
