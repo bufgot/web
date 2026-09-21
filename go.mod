@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/labstack/echo/v4 v4.15.1
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/valyala/fasthttp v1.70.0
 )
